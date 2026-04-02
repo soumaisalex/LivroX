@@ -1,26 +1,47 @@
- # LivroX
+# LivroX
 Livro caixa para pequenas empresas
 
-## Status
-Este repositório agora contém uma **base de arquitetura** para o produto solicitado, incluindo:
+SPA em React para controle de livro-caixa de pequena empresa, com foco em responsividade, onboarding inicial e gestão de usuários por empresa.
 
-- visão técnica do projeto SPA React responsivo;
-- proposta de autenticação e papéis (master/member);
-- fluxo de primeiro acesso (onboarding da empresa);
-- modelagem inicial de banco no Supabase com RLS.
+## Funcionalidades implementadas neste repositório
+- Onboarding de primeiro acesso para cadastrar:
+  - empresa;
+  - bancos/carteiras;
+  - categorias de receita e despesa.
+- Página principal de livro-caixa com:
+  - cadastro de transações;
+  - busca por descrição;
+  - filtros por data e categoria;
+  - timestamp (`created_at`) visível em cada registro.
+- Área de usuários para perfil `master` criar usuários.
+- Página de perfil para alteração de login/senha (fluxo de UI).
+- Layout responsivo desktop/mobile em tons de verde pastel.
 
-## Arquivos principais
-- `docs/arquitetura.md`: guia funcional/técnico e decisões de stack.
-- `supabase/schema.sql`: schema inicial (tabelas, índices, políticas RLS e triggers).
+## Supabase
+A aplicação já está apontada para:
+- URL: `https://tjqshwzelrqfzplubgps.supabase.co`
+- Publishable key: `sb_publishable_WR30mxi261lXGCqQ9ksCvw_0qJu7GTM`
 
-## Próximos passos recomendados
-1. Criar o frontend React (Vite + TypeScript) seguindo `docs/arquitetura.md`.
-2. Aplicar `supabase/schema.sql` no projeto Supabase.
-3. Configurar o deploy no Netlify com o GitHub.
-4. Implementar autenticação por username+senha conforme opção arquitetural escolhida.
+> Recomendado mover esses valores para variáveis de ambiente em produção.
 
-## Observação
-No ambiente atual, a instalação automática de dependências npm foi bloqueada por política de acesso ao registry externo. Mesmo assim, a estrutura de arquitetura e banco foi entregue para acelerar o início do desenvolvimento.
+### Variáveis de ambiente (opcional)
+Crie um `.env`:
 
-OF
-)
+```env
+VITE_SUPABASE_URL=https://tjqshwzelrqfzplubgps.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_WR30mxi261lXGCqQ9ksCvw_0qJu7GTM
+```
+
+## Banco de dados
+Use o script em `supabase/schema.sql` para criar as tabelas e policies.
+
+## Rodando localmente
+```bash
+npm install
+npm run dev
+```
+
+## Deploy
+- Código no GitHub.
+- Deploy do SPA no Netlify.
+- Backend e banco no Supabase.
