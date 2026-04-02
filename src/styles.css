@@ -1,0 +1,74 @@
+:root {
+  --bg: #f2f7f4;
+  --card: #ffffff;
+  --text: #1f2b23;
+  --muted: #6d7a71;
+  --primary: #7fbf9e;
+  --primary-dark: #5faf87;
+  --border: #d8e5dc;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+}
+
+.page { max-width: 1180px; margin: 0 auto; padding: 1rem; display: grid; gap: 1rem; }
+.center { min-height: 100vh; display: grid; place-items: center; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 6px 20px rgba(13, 41, 27, 0.06);
+}
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: .8rem; flex-wrap: wrap; }
+.topbar h1 { margin: 0; }
+.topbar nav { display: flex; gap: .5rem; flex-wrap: wrap; }
+button {
+  border: 0;
+  border-radius: 10px;
+  background: var(--primary);
+  color: #0f2519;
+  font-weight: 600;
+  padding: .6rem .95rem;
+  cursor: pointer;
+}
+button.active, button:hover { background: var(--primary-dark); color: #fff; }
+input, select, textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: .65rem .7rem;
+  background: #fff;
+}
+label { display: grid; gap: .35rem; color: var(--muted); font-size: .92rem; }
+.grid { display: grid; gap: .8rem; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1.3fr; gap: 1rem; }
+.filters { display: grid; grid-template-columns: repeat(4, minmax(100px, 1fr)); gap: .5rem; margin-bottom: .8rem; }
+.kpis { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: .8rem; }
+.table-wrap { overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .93rem; }
+th, td { border-bottom: 1px solid var(--border); padding: .55rem; text-align: left; }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.list li { display: flex; justify-content: space-between; border: 1px solid var(--border); border-radius: 10px; padding: .6rem; }
+.tip { color: var(--muted); font-size: .85rem; }
+.error-text {
+  padding: .8rem;
+  border: 1px solid #f0c7c7;
+  background: #fff2f2;
+  color: #7c1f1f;
+  border-radius: 10px;
+}
+
+@media (max-width: 900px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .filters { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 540px) {
+  .filters { grid-template-columns: 1fr; }
+}
