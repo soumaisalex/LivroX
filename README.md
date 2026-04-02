@@ -17,20 +17,6 @@ SPA em React para controle de livro-caixa de pequena empresa, com foco em respon
 - Página de perfil para alteração de login/senha (fluxo de UI).
 - Layout responsivo desktop/mobile em tons de verde pastel.
 
-## Supabase
-A aplicação já está apontada para:
-- URL: `https://tjqshwzelrqfzplubgps.supabase.co`
-- Publishable key: `sb_publishable_WR30mxi261lXGCqQ9ksCvw_0qJu7GTM`
-
-> Recomendado mover esses valores para variáveis de ambiente em produção.
-
-### Variáveis de ambiente (opcional)
-Crie um `.env`:
-
-```env
-VITE_SUPABASE_URL=https://tjqshwzelrqfzplubgps.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_WR30mxi261lXGCqQ9ksCvw_0qJu7GTM
-```
 
 ## Banco de dados
 Use o script em `supabase/schema.sql` para criar as tabelas e policies.
