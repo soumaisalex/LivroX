@@ -19,6 +19,7 @@ const emptyTransaction = {
 export default function App() {
   const [activeTab, setActiveTab] = useState('book');
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
   const [setupDone, setSetupDone] = useState(false);
   const [company, setCompany] = useState(null);
   const [sessionUser, setSessionUser] = useState({
@@ -56,21 +57,23 @@ export default function App() {
 
   async function bootstrap() {
     setLoading(true);
+    setErrorMessage('');
 
-    const { data: companyRows } = await supabase.from('companies').select('*').limit(1);
-    const companyData = companyRows?.[0] ?? null;
+    try {
+      const { data: companyRows, error: companyError } = await supabase.from('companies').select('*').limit(1);
+      if (companyError) throw companyError;
 
-    if (!companyData) {
-      setSetupDone(false);
-      setLoading(false);
-      return;
-    }
+      const companyData = companyRows?.[0] ?? null;
 
-    setCompany(companyData);
-    setSessionUser((prev) => ({ ...prev, company_id: companyData.id }));
+      if (!companyData) {
+        setSetupDone(false);
+        return;
+      }
 
-    const [{ data: onboardRows }, { data: accountRows }, { data: categoryRows }, { data: txRows }, { data: userRows }] =
-      await Promise.all([
+      setCompany(companyData);
+      setSessionUser((prev) => ({ ...prev, company_id: companyData.id }));
+
+      const [onboardingRes, accountsRes, categoriesRes, txRes, usersRes] = await Promise.all([
         supabase.from('company_onboarding').select('*').eq('company_id', companyData.id).limit(1),
         supabase.from('accounts').select('*').eq('company_id', companyData.id).order('name'),
         supabase.from('categories').select('*').eq('company_id', companyData.id).order('name'),
@@ -78,13 +81,24 @@ export default function App() {
         supabase.from('app_users').select('*').eq('company_id', companyData.id).order('created_at', { ascending: false })
       ]);
 
-    setSetupDone(onboardRows?.[0]?.completed ?? false);
-    setAccounts(accountRows ?? []);
-    setCategories(categoryRows ?? []);
-    setTransactions(txRows ?? []);
-    setUsers(userRows ?? []);
+      const queryErrors = [onboardingRes.error, accountsRes.error, categoriesRes.error, txRes.error, usersRes.error].filter(Boolean);
+      if (queryErrors.length) {
+        throw queryErrors[0];
+      }
 
-    setLoading(false);
+      setSetupDone(onboardingRes.data?.[0]?.completed ?? false);
+      setAccounts(accountsRes.data ?? []);
+      setCategories(categoriesRes.data ?? []);
+      setTransactions(txRes.data ?? []);
+      setUsers(usersRes.data ?? []);
+    } catch (error) {
+      setErrorMessage(
+        `Erro ao carregar dados do Supabase: ${error?.message || 'erro desconhecido'}. ` +
+        'Confirme as variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no Netlify.'
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function runSetup(e) {
@@ -191,6 +205,18 @@ export default function App() {
 
   if (loading) {
     return <main className="center">Carregando dados...</main>;
+  }
+
+  if (errorMessage) {
+    return (
+      <main className="page">
+        <section className="card">
+          <h1>Não foi possível carregar o app</h1>
+          <p className="error-text">{errorMessage}</p>
+          <button onClick={bootstrap}>Tentar novamente</button>
+        </section>
+      </main>
+    );
   }
 
   if (!setupDone) {
