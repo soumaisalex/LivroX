@@ -16,7 +16,7 @@ SPA em React para controle de livro-caixa de pequena empresa, com foco em respon
 - Cadastro e remoção de categorias.
 - Cadastro e remoção de contas.
 - Área de usuários com CRUD (criar, editar e excluir) para perfil `master`.
-- Tela de login com verificação de senha em hash e botão de sair da conta.
+- Tela de login com verificação de login/senha simples e botão de sair da conta.
 - Página de perfil para alteração de login/senha (fluxo de UI).
 - Layout responsivo desktop/mobile com visual moderno em tema escuro e paleta verde pastel.
 
@@ -93,3 +93,6 @@ Se este erro aparecer, aplique novamente o `supabase/schema.sql` atualizado (ele
 Se clicar e nada acontecer, normalmente é política RLS bloqueando inserts.
 1. Reaplique `supabase/schema.sql` atualizado.
 2. Este MVP usa políticas abertas para facilitar testes sem login completo (`*_open` policies).
+
+### Login sempre com senha incorreta
+Reaplique `supabase/schema.sql` para garantir a coluna `app_users.password` e depois ajuste as senhas dos usuários no banco.

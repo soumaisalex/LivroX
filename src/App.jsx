@@ -18,12 +18,6 @@ const emptyTransaction = {
   account_id: ''
 };
 
-async function hashPassword(value) {
-  const encoded = new TextEncoder().encode(value);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
-  return Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 export default function App() {
   const [activeTab, setActiveTab] = useState('book');
   const [loading, setLoading] = useState(true);
@@ -128,12 +122,11 @@ export default function App() {
       setCompany(insertedCompany);
 
       const masterUserId = crypto.randomUUID();
-      const masterPasswordHash = await hashPassword('master123');
       const { error: masterUserError } = await supabase.from('app_users').insert({
         id: masterUserId,
         company_id: companyId,
         username: 'master',
-        password_hash: masterPasswordHash,
+        password: 'master123',
         role: 'master'
       });
       if (masterUserError) throw masterUserError;
@@ -194,8 +187,7 @@ export default function App() {
       return;
     }
 
-    const enteredHash = await hashPassword(loginForm.password);
-    if (user.password_hash !== enteredHash) {
+    if (user.password !== loginForm.password) {
       setErrorMessage('Senha incorreta.');
       return;
     }
@@ -298,7 +290,7 @@ export default function App() {
       id: crypto.randomUUID(),
       company_id: company.id,
       username: newUser.username,
-      password_hash: await hashPassword(newUser.password),
+      password: newUser.password,
       role: newUser.role
     });
     if (error) {
@@ -316,7 +308,7 @@ export default function App() {
 
     const payload = { username: profile.username };
     if (profile.password.trim()) {
-      payload.password_hash = await hashPassword(profile.password);
+      payload.password = profile.password;
     }
 
     const { error } = await supabase.from('app_users').update(payload).eq('id', sessionUser.id);
@@ -338,7 +330,7 @@ export default function App() {
 
   async function saveUserEdit() {
     const payload = { username: editingUser.username, role: editingUser.role };
-    if (editingUser.password.trim()) payload.password_hash = await hashPassword(editingUser.password);
+    if (editingUser.password.trim()) payload.password = editingUser.password;
 
     const { error } = await supabase.from('app_users').update(payload).eq('id', editingUserId);
     if (error) {
@@ -554,7 +546,7 @@ export default function App() {
               <label>Perfil<select value={newUser.role} onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value }))}><option value="member">Membro</option><option value="master">Master</option></select></label>
               <button type="submit">Criar usuário</button>
             </form>
-            <p className="tip">A senha é armazenada em hash SHA-256 (MVP). Recomendado migrar para auth com Edge Function em produção.</p>
+            <p className="tip">Senha é salva em texto para facilitar recuperação (conforme solicitado).</p>
           </article>
 
           <article className="card">
