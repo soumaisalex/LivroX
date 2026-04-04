@@ -69,9 +69,16 @@ create table if not exists public.transactions (
   description text,
   effective_date date not null,
   created_by uuid not null references public.app_users(id),
+  deleted boolean not null default false,
+  deleted_at timestamptz,
+  deleted_by uuid references public.app_users(id),
   created_at timestamptz not null default now(), -- timestamp automático
   updated_at timestamptz not null default now()
 );
+
+alter table public.transactions add column if not exists deleted boolean not null default false;
+alter table public.transactions add column if not exists deleted_at timestamptz;
+alter table public.transactions add column if not exists deleted_by uuid references public.app_users(id);
 
 create index if not exists idx_transactions_company_date on public.transactions(company_id, effective_date desc);
 create index if not exists idx_transactions_company_type on public.transactions(company_id, type);

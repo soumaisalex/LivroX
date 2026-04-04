@@ -8,17 +8,17 @@ SPA em React para controle de livro-caixa de pequena empresa, com foco em respon
   - bancos/carteiras;
   - categorias de receita e despesa.
 - Página principal de livro-caixa com:
-  - cadastro de transações;
-  - exclusão de transações;
+  - seletor central de mês/ano e carga sob demanda;
+  - cadastro/edição/exclusão lógica de transações (soft delete);
   - busca por descrição;
-  - filtros por data e categoria;
-  - timestamp (`created_at`) visível em cada registro.
+  - filtros por categoria e por tipo (receitas/despesas);
+  - botão flutuante para nova transação.
 - Cadastro e remoção de categorias.
 - Cadastro e remoção de contas.
 - Área de usuários com CRUD (criar, editar e excluir) para perfil `master`.
 - Tela de login com verificação de login/senha simples e botão de sair da conta.
 - Página de perfil para alteração de login/senha (fluxo de UI).
-- Layout responsivo desktop/mobile com visual moderno em tema escuro e paleta verde pastel.
+- Layout responsivo com sidebar lateral (desktop) e menu recolhível (mobile), em tema dashboard financeiro claro.
 
 ## Supabase
 A aplicação já está apontada para:
