@@ -15,10 +15,10 @@ SPA em React para controle de livro-caixa de pequena empresa, com foco em respon
   - timestamp (`created_at`) visível em cada registro.
 - Cadastro e remoção de categorias.
 - Cadastro e remoção de contas.
-- Área de usuários para perfil `master` criar usuários.
-- Tela de login e botão de sair da conta.
+- Área de usuários com CRUD (criar, editar e excluir) para perfil `master`.
+- Tela de login com verificação de senha em hash e botão de sair da conta.
 - Página de perfil para alteração de login/senha (fluxo de UI).
-- Layout responsivo desktop/mobile em tons de verde pastel.
+- Layout responsivo desktop/mobile com visual moderno em tema escuro e paleta verde pastel.
 
 ## Supabase
 A aplicação já está apontada para:

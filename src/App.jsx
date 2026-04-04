@@ -18,6 +18,12 @@ const emptyTransaction = {
   account_id: ''
 };
 
+async function hashPassword(value) {
+  const encoded = new TextEncoder().encode(value);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+  return Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState('book');
   const [loading, setLoading] = useState(true);
@@ -54,6 +60,8 @@ export default function App() {
   });
 
   const [newUser, setNewUser] = useState({ username: '', password: '', role: 'member' });
+  const [editingUserId, setEditingUserId] = useState('');
+  const [editingUser, setEditingUser] = useState({ username: '', role: 'member', password: '' });
   const [profile, setProfile] = useState({ username: '', password: '' });
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [categoryForm, setCategoryForm] = useState({ name: '', type: 'expense' });
@@ -120,10 +128,12 @@ export default function App() {
       setCompany(insertedCompany);
 
       const masterUserId = crypto.randomUUID();
+      const masterPasswordHash = await hashPassword('master123');
       const { error: masterUserError } = await supabase.from('app_users').insert({
         id: masterUserId,
         company_id: companyId,
         username: 'master',
+        password_hash: masterPasswordHash,
         role: 'master'
       });
       if (masterUserError) throw masterUserError;
@@ -180,7 +190,13 @@ export default function App() {
 
     const user = data?.[0];
     if (!user || !loginForm.password.trim()) {
-      setErrorMessage('Login inválido. Use usuário existente e informe uma senha.');
+      setErrorMessage('Login inválido.');
+      return;
+    }
+
+    const enteredHash = await hashPassword(loginForm.password);
+    if (user.password_hash !== enteredHash) {
+      setErrorMessage('Senha incorreta.');
       return;
     }
 
@@ -282,6 +298,7 @@ export default function App() {
       id: crypto.randomUUID(),
       company_id: company.id,
       username: newUser.username,
+      password_hash: await hashPassword(newUser.password),
       role: newUser.role
     });
     if (error) {
@@ -297,14 +314,52 @@ export default function App() {
     e.preventDefault();
     if (!sessionUser.id) return;
 
-    const { error } = await supabase.from('app_users').update({ username: profile.username }).eq('id', sessionUser.id);
+    const payload = { username: profile.username };
+    if (profile.password.trim()) {
+      payload.password_hash = await hashPassword(profile.password);
+    }
+
+    const { error } = await supabase.from('app_users').update(payload).eq('id', sessionUser.id);
     if (error) {
       setErrorMessage(`Erro ao atualizar perfil: ${error.message}`);
       return;
     }
 
     setSessionUser((prev) => ({ ...prev, username: profile.username }));
+    setProfile((prev) => ({ ...prev, password: '' }));
     alert('Perfil atualizado.');
+    await bootstrap();
+  }
+
+  function startEditUser(user) {
+    setEditingUserId(user.id);
+    setEditingUser({ username: user.username, role: user.role, password: '' });
+  }
+
+  async function saveUserEdit() {
+    const payload = { username: editingUser.username, role: editingUser.role };
+    if (editingUser.password.trim()) payload.password_hash = await hashPassword(editingUser.password);
+
+    const { error } = await supabase.from('app_users').update(payload).eq('id', editingUserId);
+    if (error) {
+      setErrorMessage(`Erro ao atualizar usuário: ${error.message}`);
+      return;
+    }
+    setEditingUserId('');
+    setEditingUser({ username: '', role: 'member', password: '' });
+    await bootstrap();
+  }
+
+  async function deleteUser(id) {
+    if (id === sessionUser.id) {
+      setErrorMessage('Você não pode excluir o usuário logado.');
+      return;
+    }
+    const { error } = await supabase.from('app_users').delete().eq('id', id);
+    if (error) {
+      setErrorMessage(`Erro ao excluir usuário: ${error.message}`);
+      return;
+    }
     await bootstrap();
   }
 
@@ -416,10 +471,11 @@ export default function App() {
             </select>
           </div>
 
-          <div className="kpis">
-            <p>Receitas: <strong>R$ {totals.income.toFixed(2)}</strong></p>
-            <p>Despesas: <strong>R$ {totals.expense.toFixed(2)}</strong></p>
-            <p>Saldo: <strong>R$ {(totals.income - totals.expense).toFixed(2)}</strong></p>
+          <div className="kpi-grid">
+            <article className="kpi-card"><small>Saldo atual</small><strong>R$ {(totals.income - totals.expense).toFixed(2)}</strong></article>
+            <article className="kpi-card"><small>Receitas</small><strong>R$ {totals.income.toFixed(2)}</strong></article>
+            <article className="kpi-card"><small>Despesas</small><strong>R$ {totals.expense.toFixed(2)}</strong></article>
+            <article className="kpi-card"><small>Balanço mensal</small><strong>R$ {(totals.income - totals.expense).toFixed(2)}</strong></article>
           </div>
 
           <div className="table-wrap">
@@ -491,12 +547,6 @@ export default function App() {
       {activeTab === 'users' && (
         <section className="grid-2">
           <article className="card">
-            <h2>Usuários da empresa</h2>
-            <ul className="list">
-              {users.map((user) => <li key={user.id}><span>{user.username}</span><small>{user.role}</small></li>)}
-            </ul>
-          </article>
-          <article className="card">
             <h2>Novo usuário (master)</h2>
             <form className="grid" onSubmit={createUser}>
               <label>Login<input required value={newUser.username} onChange={(e) => setNewUser((p) => ({ ...p, username: e.target.value }))} /></label>
@@ -504,6 +554,44 @@ export default function App() {
               <label>Perfil<select value={newUser.role} onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value }))}><option value="member">Membro</option><option value="master">Master</option></select></label>
               <button type="submit">Criar usuário</button>
             </form>
+            <p className="tip">A senha é armazenada em hash SHA-256 (MVP). Recomendado migrar para auth com Edge Function em produção.</p>
+          </article>
+
+          <article className="card">
+          <h2>Gerenciamento de usuários (CRUD)</h2>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Login</th><th>Perfil</th><th>Status</th><th>Ações</th></tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.id}>
+                    <td>{user.username}</td>
+                    <td>{user.role}</td>
+                    <td>{user.is_active ? 'Ativo' : 'Inativo'}</td>
+                    <td className="actions-row">
+                      <button onClick={() => startEditUser(user)}>Editar</button>
+                      <button className="danger" onClick={() => deleteUser(user.id)}>Excluir</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {editingUserId && (
+            <div className="grid edit-box">
+              <h3>Editar usuário</h3>
+              <label>Login<input value={editingUser.username} onChange={(e) => setEditingUser((p) => ({ ...p, username: e.target.value }))} /></label>
+              <label>Perfil<select value={editingUser.role} onChange={(e) => setEditingUser((p) => ({ ...p, role: e.target.value }))}><option value="member">Membro</option><option value="master">Master</option></select></label>
+              <label>Nova senha (opcional)<input type="password" value={editingUser.password} onChange={(e) => setEditingUser((p) => ({ ...p, password: e.target.value }))} /></label>
+              <div className="actions-row">
+                <button onClick={saveUserEdit}>Salvar</button>
+                <button className="danger" onClick={() => setEditingUserId('')}>Cancelar</button>
+              </div>
+            </div>
+          )}
           </article>
         </section>
       )}

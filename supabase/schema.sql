@@ -21,12 +21,15 @@ create table if not exists public.app_users (
   id uuid primary key default gen_random_uuid(),
   company_id uuid not null references public.companies(id) on delete cascade,
   username text not null,
+  password_hash text not null default '',
   role public.user_role not null default 'member',
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique(company_id, username)
 );
+
+alter table public.app_users add column if not exists password_hash text not null default '';
 
 -- Contas do livro caixa (bancos/carteiras)
 create table if not exists public.accounts (
