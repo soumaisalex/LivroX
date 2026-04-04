@@ -9,10 +9,14 @@ SPA em React para controle de livro-caixa de pequena empresa, com foco em respon
   - categorias de receita e despesa.
 - Página principal de livro-caixa com:
   - cadastro de transações;
+  - exclusão de transações;
   - busca por descrição;
   - filtros por data e categoria;
   - timestamp (`created_at`) visível em cada registro.
+- Cadastro e remoção de categorias.
+- Cadastro e remoção de contas.
 - Área de usuários para perfil `master` criar usuários.
+- Tela de login e botão de sair da conta.
 - Página de perfil para alteração de login/senha (fluxo de UI).
 - Layout responsivo desktop/mobile em tons de verde pastel.
 

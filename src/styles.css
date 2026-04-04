@@ -28,6 +28,7 @@ body {
 .topbar { display: flex; justify-content: space-between; align-items: center; gap: .8rem; flex-wrap: wrap; }
 .topbar h1 { margin: 0; }
 .topbar nav { display: flex; gap: .5rem; flex-wrap: wrap; }
+.section-head { display: flex; justify-content: space-between; align-items: center; gap: .8rem; margin-bottom: .8rem; }
 button {
   border: 0;
   border-radius: 10px;
@@ -38,6 +39,8 @@ button {
   cursor: pointer;
 }
 button.active, button:hover { background: var(--primary-dark); color: #fff; }
+.danger { background: #e36d6d; color: #fff; }
+.danger:hover { background: #c84f4f; }
 input, select, textarea {
   width: 100%;
   border: 1px solid var(--border);
@@ -62,6 +65,22 @@ th, td { border-bottom: 1px solid var(--border); padding: .55rem; text-align: le
   background: #fff2f2;
   color: #7c1f1f;
   border-radius: 10px;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 14, 10, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  z-index: 100;
+}
+.modal-card {
+  width: min(680px, 100%);
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  padding: 1rem;
 }
 
 @media (max-width: 900px) {
