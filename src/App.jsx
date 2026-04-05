@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Building2,
   LogOut,
-  Menu,
   Pencil,
   Plus,
   Receipt,
@@ -11,9 +10,7 @@ import {
   TrendingDown,
   TrendingUp,
   UserCircle2,
-  Users,
-  Wallet,
-  X
+  Wallet
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 
@@ -21,7 +18,6 @@ const menuItems = [
   { id: 'book', label: 'Transações', icon: Receipt },
   { id: 'categories', label: 'Categorias', icon: Tags },
   { id: 'accounts', label: 'Contas', icon: Building2 },
-  { id: 'users', label: 'Usuários', icon: Users },
   { id: 'profile', label: 'Perfil', icon: UserCircle2 }
 ];
 
@@ -50,7 +46,7 @@ export default function App() {
   const [setupDone, setSetupDone] = useState(false);
   const [company, setCompany] = useState(null);
   const [loggedIn, setLoggedIn] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
@@ -337,8 +333,8 @@ export default function App() {
 
   const balance = totals.income - totals.expense;
   const isMaster = sessionUser.role === 'master';
-  const visibleMenuItems = menuItems.filter((item) => (item.id === 'users' ? isMaster : true));
   const fieldClass = 'rounded-xl bg-slate-100/80 border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400';
+  const activePageTitle = activeTab === 'users' ? 'Usuários' : menuItems.find((item) => item.id === activeTab)?.label || 'Transações';
 
   useEffect(() => {
     if (!isMaster && activeTab === 'users') setActiveTab('book');
@@ -385,21 +381,18 @@ export default function App() {
 
   return (
     <main className="min-h-screen bg-slate-50 flex">
-      {sidebarOpen && <div className="fixed inset-0 bg-slate-900/40 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
-
-      <aside className={`fixed lg:static z-50 inset-y-0 left-0 w-72 p-4 transform transition-all duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <aside className="hidden md:block md:w-72 p-4">
         <div className="h-full rounded-2xl border border-white/20 bg-slate-900/90 backdrop-blur-md p-4 flex flex-col">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-2xl font-extrabold text-white tracking-tight">LivroX</h2>
-            <button className="lg:hidden bg-white/10 text-white" onClick={() => setSidebarOpen(false)}><X size={16} /></button>
           </div>
           <p className="text-slate-400 text-sm mb-5">{company?.name}</p>
 
           <nav className="space-y-1 flex-1">
-            {visibleMenuItems.map((item) => {
+            {menuItems.map((item) => {
               const Icon = item.icon;
               return (
-                <button key={item.id} onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeTab === item.id ? 'bg-white/10 text-white border-l-4 border-emerald-500' : 'text-slate-300 hover:bg-white/10'}`}>
+                <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeTab === item.id ? 'bg-white/10 text-white border-l-4 border-emerald-500' : 'text-slate-300 hover:bg-white/10'}`}>
                   <Icon size={16} />
                   {item.label}
                 </button>
@@ -414,12 +407,9 @@ export default function App() {
         </div>
       </aside>
 
-      <section className="flex-1 p-4 lg:p-6 space-y-4">
-        <header className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <button className="lg:hidden bg-slate-100 text-slate-700" onClick={() => setSidebarOpen(true)}><Menu size={18} /></button>
-            <h1 className="text-2xl font-bold tracking-tight">Transações</h1>
-          </div>
+      <section className="flex-1 p-4 lg:p-6 space-y-4 pb-24 md:pb-6">
+        <header className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 flex flex-col items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-center">{activePageTitle}</h1>
 
           <div className="flex items-center gap-2 bg-slate-50 rounded-xl border border-slate-200 px-2 py-1">
             <button className="bg-transparent text-slate-600 hover:text-slate-900" onClick={() => setSelectedMonth((m) => (m === 0 ? 11 : m - 1))}>‹</button>
@@ -429,8 +419,6 @@ export default function App() {
               {[selectedYear - 2, selectedYear - 1, selectedYear, selectedYear + 1].map((year) => <option key={year} value={year}>{year}</option>)}
             </select>
           </div>
-
-          <small className="text-slate-500">{sessionUser.role}</small>
         </header>
 
         {errorMessage && <p className="text-sm text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-3">{errorMessage}</p>}
@@ -506,10 +494,29 @@ export default function App() {
 
         {activeTab === 'users' && isMaster && <section className="grid grid-cols-1 lg:grid-cols-2 gap-4"><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Novo usuário</h2><form className="grid gap-3" onSubmit={createUser}><input className={fieldClass} placeholder="Login" required value={newUser.username} onChange={(e) => setNewUser((p) => ({ ...p, username: e.target.value }))} /><input className={fieldClass} placeholder="Senha" required value={newUser.password} onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))} /><select className={fieldClass} value={newUser.role} onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value }))}><option value="member">Membro</option><option value="master">Master</option></select><button>Criar</button></form></article><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">CRUD usuários</h2><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="text-xs uppercase text-slate-500 border-b border-slate-100"><th className="py-2 text-left">Login</th><th className="py-2 text-left">Perfil</th><th className="py-2 text-left">Ações</th></tr></thead><tbody>{users.map((user) => <tr key={user.id} className="border-b border-slate-100"><td className="py-2">{user.username}</td><td className="py-2">{user.role}</td><td className="py-2"><div className="flex gap-2"><button className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-all duration-300" onClick={() => startEditUser(user)}><Pencil size={14} /></button><button className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-300" onClick={() => deleteUser(user.id)}><Trash2 size={14} /></button></div></td></tr>)}</tbody></table></div>{editingUserId && <div className="grid gap-3 mt-3 p-4 rounded-xl border border-slate-100 bg-slate-50"><input className={fieldClass} value={editingUser.username} onChange={(e) => setEditingUser((p) => ({ ...p, username: e.target.value }))} /><input className={fieldClass} value={editingUser.password} onChange={(e) => setEditingUser((p) => ({ ...p, password: e.target.value }))} /><select className={fieldClass} value={editingUser.role} onChange={(e) => setEditingUser((p) => ({ ...p, role: e.target.value }))}><option value="member">Membro</option><option value="master">Master</option></select><div className="flex gap-2"><button onClick={saveUserEdit}>Salvar</button><button className="bg-rose-500 text-white" onClick={() => setEditingUserId('')}>Cancelar</button></div></div>}</article></section>}
 
-        {activeTab === 'profile' && <section className="bg-white rounded-2xl border border-slate-100 p-4 max-w-xl"><h2 className="text-lg font-bold mb-3">Meu perfil</h2><form className="grid gap-3" onSubmit={updateProfile}><input className={fieldClass} value={profile.username} onChange={(e) => setProfile((p) => ({ ...p, username: e.target.value }))} /><input className={fieldClass} type="password" value={profile.password} onChange={(e) => setProfile((p) => ({ ...p, password: e.target.value }))} /><button>Salvar</button></form></section>}
+        {activeTab === 'profile' && <section className="bg-white rounded-2xl border border-slate-100 p-4 max-w-xl"><h2 className="text-lg font-bold mb-3">Meu perfil</h2><form className="grid gap-3" onSubmit={updateProfile}><input className={fieldClass} value={profile.username} onChange={(e) => setProfile((p) => ({ ...p, username: e.target.value }))} /><input className={fieldClass} type="password" value={profile.password} onChange={(e) => setProfile((p) => ({ ...p, password: e.target.value }))} /><button>Salvar</button></form>{isMaster && <button className="mt-3 w-full bg-slate-100 text-slate-700" onClick={() => setActiveTab('users')}>Gerenciar usuários</button>}</section>}
 
         <button className="fixed bottom-5 right-5 w-14 h-14 rounded-full shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white grid place-items-center hover:scale-105 transition-all duration-300" onClick={openCreateTransaction}><Plus size={26} /></button>
       </section>
+
+      <nav
+        className="fixed md:hidden bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 flex items-center justify-around px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-50"
+      >
+        <button className={`flex flex-col items-center text-xs ${activeTab === 'book' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('book'); setProfileMenuOpen(false); }}><Receipt size={18} /><span>Transações</span></button>
+        <button className={`flex flex-col items-center text-xs ${activeTab === 'categories' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('categories'); setProfileMenuOpen(false); }}><Tags size={18} /><span>Categorias</span></button>
+        <button className="relative -top-4 w-14 h-14 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 grid place-items-center" onClick={openCreateTransaction}><Plus size={24} /></button>
+        <button className={`flex flex-col items-center text-xs ${activeTab === 'accounts' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('accounts'); setProfileMenuOpen(false); }}><Building2 size={18} /><span>Contas</span></button>
+        <div className="relative">
+          <button className={`flex flex-col items-center text-xs ${activeTab === 'profile' || activeTab === 'users' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => setProfileMenuOpen((v) => !v)}><UserCircle2 size={18} /><span>Perfil</span></button>
+          {profileMenuOpen && (
+            <div className="absolute bottom-14 right-0 w-44 rounded-xl border border-slate-200 bg-white shadow-xl p-2">
+              <button className="w-full text-left px-2 py-2 rounded-lg hover:bg-slate-100 text-sm text-slate-700" onClick={() => { setActiveTab('profile'); setProfileMenuOpen(false); }}>Meu perfil</button>
+              {isMaster && <button className="w-full text-left px-2 py-2 rounded-lg hover:bg-slate-100 text-sm text-slate-700" onClick={() => { setActiveTab('users'); setProfileMenuOpen(false); }}>Usuários</button>}
+              <button className="w-full text-left px-2 py-2 rounded-lg hover:bg-rose-50 text-sm text-rose-600" onClick={handleLogout}>Sair</button>
+            </div>
+          )}
+        </div>
+      </nav>
 
       {isTxModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 z-[60] grid place-items-center p-4" onClick={() => setIsTxModalOpen(false)}>
