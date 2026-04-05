@@ -19,6 +19,7 @@ SPA em React para controle de livro-caixa de pequena empresa, com foco em respon
 - Tela de login com verificação de login/senha simples e botão de sair da conta.
 - Página de perfil para alteração de login/senha (fluxo de UI).
 - Layout responsivo com sidebar lateral (desktop) e menu recolhível (mobile), em tema dashboard financeiro claro.
+- UI refeita com Tailwind CSS e ícones Lucide para estilo SaaS moderno.
 
 ## Supabase
 A aplicação já está apontada para:
