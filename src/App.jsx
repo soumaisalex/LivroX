@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowDown,
-  ArrowUp,
   Building2,
-  CreditCard,
-  Home,
   LogOut,
   Menu,
   Pencil,
@@ -340,6 +336,13 @@ export default function App() {
   }, { income: 0, expense: 0 }), [transactions]);
 
   const balance = totals.income - totals.expense;
+  const isMaster = sessionUser.role === 'master';
+  const visibleMenuItems = menuItems.filter((item) => (item.id === 'users' ? isMaster : true));
+  const fieldClass = 'rounded-xl bg-slate-100/80 border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400';
+
+  useEffect(() => {
+    if (!isMaster && activeTab === 'users') setActiveTab('book');
+  }, [isMaster, activeTab]);
 
   if (loading) return <main className="min-h-screen grid place-items-center text-slate-500">Carregando...</main>;
 
@@ -393,7 +396,7 @@ export default function App() {
           <p className="text-slate-400 text-sm mb-5">{company?.name}</p>
 
           <nav className="space-y-1 flex-1">
-            {menuItems.map((item) => {
+            {visibleMenuItems.map((item) => {
               const Icon = item.icon;
               return (
                 <button key={item.id} onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-300 ${activeTab === item.id ? 'bg-white/10 text-white border-l-4 border-emerald-500' : 'text-slate-300 hover:bg-white/10'}`}>
@@ -412,7 +415,7 @@ export default function App() {
       </aside>
 
       <section className="flex-1 p-4 lg:p-6 space-y-4">
-        <header className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
+        <header className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <button className="lg:hidden bg-slate-100 text-slate-700" onClick={() => setSidebarOpen(true)}><Menu size={18} /></button>
             <h1 className="text-2xl font-bold tracking-tight">Transações</h1>
@@ -443,12 +446,12 @@ export default function App() {
 
             <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                <input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" placeholder="Buscar descrição" value={search} onChange={(e) => setSearch(e.target.value)} />
-                <select className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+                <input className={fieldClass} placeholder="Buscar descrição" value={search} onChange={(e) => setSearch(e.target.value)} />
+                <select className={fieldClass} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
                   <option value="">Todas categorias</option>
                   {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-                <select className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                <select className={fieldClass} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
                   <option value="all">Receitas e despesas</option>
                   <option value="income">Apenas receitas</option>
                   <option value="expense">Apenas despesas</option>
@@ -497,35 +500,35 @@ export default function App() {
           </>
         )}
 
-        {activeTab === 'categories' && <section className="grid grid-cols-1 lg:grid-cols-2 gap-4"><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Nova categoria</h2><form className="grid gap-3" onSubmit={createCategory}><input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" placeholder="Nome" required value={categoryForm.name} onChange={(e) => setCategoryForm((p) => ({ ...p, name: e.target.value }))} /><select className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" value={categoryForm.type} onChange={(e) => setCategoryForm((p) => ({ ...p, type: e.target.value }))}><option value="expense">Despesa</option><option value="income">Receita</option></select><button>Adicionar</button></form></article><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Categorias</h2><ul className="space-y-2">{categories.map((cat) => <li key={cat.id} className="flex items-center justify-between border border-slate-100 rounded-xl px-3 py-2"><span>{cat.name}</span><button className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-300" onClick={() => deleteCategory(cat.id)}><Trash2 size={14} /></button></li>)}</ul></article></section>}
+        {activeTab === 'categories' && <section className="grid grid-cols-1 lg:grid-cols-2 gap-4"><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Nova categoria</h2><form className="grid gap-3" onSubmit={createCategory}><input className={fieldClass} placeholder="Nome" required value={categoryForm.name} onChange={(e) => setCategoryForm((p) => ({ ...p, name: e.target.value }))} /><select className={fieldClass} value={categoryForm.type} onChange={(e) => setCategoryForm((p) => ({ ...p, type: e.target.value }))}><option value="expense">Despesa</option><option value="income">Receita</option></select><button>Adicionar</button></form></article><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Categorias</h2><ul className="space-y-2">{categories.map((cat) => <li key={cat.id} className="flex items-center justify-between border border-slate-100 rounded-xl px-3 py-2"><span>{cat.name}</span><button className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-300" onClick={() => deleteCategory(cat.id)}><Trash2 size={14} /></button></li>)}</ul></article></section>}
 
-        {activeTab === 'accounts' && <section className="grid grid-cols-1 lg:grid-cols-2 gap-4"><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Nova conta</h2><form className="grid gap-3" onSubmit={createAccount}><input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" placeholder="Nome" required value={accountForm.name} onChange={(e) => setAccountForm((p) => ({ ...p, name: e.target.value }))} /><select className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" value={accountForm.kind} onChange={(e) => setAccountForm((p) => ({ ...p, kind: e.target.value }))}><option value="bank">Banco</option><option value="wallet">Carteira</option><option value="cash">Dinheiro</option></select><button>Adicionar</button></form></article><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Contas</h2><ul className="space-y-2">{accounts.map((acc) => <li key={acc.id} className="flex items-center justify-between border border-slate-100 rounded-xl px-3 py-2"><span>{acc.name}</span><button className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-300" onClick={() => deleteAccount(acc.id)}><Trash2 size={14} /></button></li>)}</ul></article></section>}
+        {activeTab === 'accounts' && <section className="grid grid-cols-1 lg:grid-cols-2 gap-4"><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Nova conta</h2><form className="grid gap-3" onSubmit={createAccount}><input className={fieldClass} placeholder="Nome" required value={accountForm.name} onChange={(e) => setAccountForm((p) => ({ ...p, name: e.target.value }))} /><select className={fieldClass} value={accountForm.kind} onChange={(e) => setAccountForm((p) => ({ ...p, kind: e.target.value }))}><option value="bank">Banco</option><option value="wallet">Carteira</option><option value="cash">Dinheiro</option></select><button>Adicionar</button></form></article><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Contas</h2><ul className="space-y-2">{accounts.map((acc) => <li key={acc.id} className="flex items-center justify-between border border-slate-100 rounded-xl px-3 py-2"><span>{acc.name}</span><button className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-300" onClick={() => deleteAccount(acc.id)}><Trash2 size={14} /></button></li>)}</ul></article></section>}
 
-        {activeTab === 'users' && <section className="grid grid-cols-1 lg:grid-cols-2 gap-4"><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Novo usuário</h2><form className="grid gap-3" onSubmit={createUser}><input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" placeholder="Login" required value={newUser.username} onChange={(e) => setNewUser((p) => ({ ...p, username: e.target.value }))} /><input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" placeholder="Senha" required value={newUser.password} onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))} /><select className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" value={newUser.role} onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value }))}><option value="member">Membro</option><option value="master">Master</option></select><button>Criar</button></form></article><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">CRUD usuários</h2><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="text-xs uppercase text-slate-500 border-b border-slate-100"><th className="py-2 text-left">Login</th><th className="py-2 text-left">Perfil</th><th className="py-2 text-left">Ações</th></tr></thead><tbody>{users.map((user) => <tr key={user.id} className="border-b border-slate-100"><td className="py-2">{user.username}</td><td className="py-2">{user.role}</td><td className="py-2"><div className="flex gap-2"><button className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-all duration-300" onClick={() => startEditUser(user)}><Pencil size={14} /></button><button className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-300" onClick={() => deleteUser(user.id)}><Trash2 size={14} /></button></div></td></tr>)}</tbody></table></div>{editingUserId && <div className="grid gap-2 mt-3 p-3 rounded-xl border border-slate-100"><input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" value={editingUser.username} onChange={(e) => setEditingUser((p) => ({ ...p, username: e.target.value }))} /><input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" value={editingUser.password} onChange={(e) => setEditingUser((p) => ({ ...p, password: e.target.value }))} /><select className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" value={editingUser.role} onChange={(e) => setEditingUser((p) => ({ ...p, role: e.target.value }))}><option value="member">Membro</option><option value="master">Master</option></select><div className="flex gap-2"><button onClick={saveUserEdit}>Salvar</button><button className="bg-rose-500 text-white" onClick={() => setEditingUserId('')}>Cancelar</button></div></div>}</article></section>}
+        {activeTab === 'users' && isMaster && <section className="grid grid-cols-1 lg:grid-cols-2 gap-4"><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Novo usuário</h2><form className="grid gap-3" onSubmit={createUser}><input className={fieldClass} placeholder="Login" required value={newUser.username} onChange={(e) => setNewUser((p) => ({ ...p, username: e.target.value }))} /><input className={fieldClass} placeholder="Senha" required value={newUser.password} onChange={(e) => setNewUser((p) => ({ ...p, password: e.target.value }))} /><select className={fieldClass} value={newUser.role} onChange={(e) => setNewUser((p) => ({ ...p, role: e.target.value }))}><option value="member">Membro</option><option value="master">Master</option></select><button>Criar</button></form></article><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">CRUD usuários</h2><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="text-xs uppercase text-slate-500 border-b border-slate-100"><th className="py-2 text-left">Login</th><th className="py-2 text-left">Perfil</th><th className="py-2 text-left">Ações</th></tr></thead><tbody>{users.map((user) => <tr key={user.id} className="border-b border-slate-100"><td className="py-2">{user.username}</td><td className="py-2">{user.role}</td><td className="py-2"><div className="flex gap-2"><button className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-all duration-300" onClick={() => startEditUser(user)}><Pencil size={14} /></button><button className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-300" onClick={() => deleteUser(user.id)}><Trash2 size={14} /></button></div></td></tr>)}</tbody></table></div>{editingUserId && <div className="grid gap-3 mt-3 p-4 rounded-xl border border-slate-100 bg-slate-50"><input className={fieldClass} value={editingUser.username} onChange={(e) => setEditingUser((p) => ({ ...p, username: e.target.value }))} /><input className={fieldClass} value={editingUser.password} onChange={(e) => setEditingUser((p) => ({ ...p, password: e.target.value }))} /><select className={fieldClass} value={editingUser.role} onChange={(e) => setEditingUser((p) => ({ ...p, role: e.target.value }))}><option value="member">Membro</option><option value="master">Master</option></select><div className="flex gap-2"><button onClick={saveUserEdit}>Salvar</button><button className="bg-rose-500 text-white" onClick={() => setEditingUserId('')}>Cancelar</button></div></div>}</article></section>}
 
-        {activeTab === 'profile' && <section className="bg-white rounded-2xl border border-slate-100 p-4 max-w-xl"><h2 className="text-lg font-bold mb-3">Meu perfil</h2><form className="grid gap-3" onSubmit={updateProfile}><input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" value={profile.username} onChange={(e) => setProfile((p) => ({ ...p, username: e.target.value }))} /><input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" type="password" value={profile.password} onChange={(e) => setProfile((p) => ({ ...p, password: e.target.value }))} /><button>Salvar</button></form></section>}
+        {activeTab === 'profile' && <section className="bg-white rounded-2xl border border-slate-100 p-4 max-w-xl"><h2 className="text-lg font-bold mb-3">Meu perfil</h2><form className="grid gap-3" onSubmit={updateProfile}><input className={fieldClass} value={profile.username} onChange={(e) => setProfile((p) => ({ ...p, username: e.target.value }))} /><input className={fieldClass} type="password" value={profile.password} onChange={(e) => setProfile((p) => ({ ...p, password: e.target.value }))} /><button>Salvar</button></form></section>}
 
         <button className="fixed bottom-5 right-5 w-14 h-14 rounded-full shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white grid place-items-center hover:scale-105 transition-all duration-300" onClick={openCreateTransaction}><Plus size={26} /></button>
       </section>
 
       {isTxModalOpen && (
         <div className="fixed inset-0 bg-slate-900/40 z-[60] grid place-items-center p-4" onClick={() => setIsTxModalOpen(false)}>
-          <div className="w-full max-w-2xl bg-white rounded-2xl border border-slate-200 shadow-xl p-6" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-xl font-bold tracking-tight mb-4">{txForm.id ? 'Editar transação' : 'Nova transação'}</h2>
-            <form className="grid gap-3" onSubmit={saveTransaction}>
-              <input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" placeholder="Descrição" value={txForm.description} onChange={(e) => setTxForm((p) => ({ ...p, description: e.target.value }))} required />
+          <div className="w-full max-w-2xl bg-white rounded-2xl border border-slate-200 shadow-xl p-7 sm:p-8" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-2xl font-bold tracking-tight mb-5">{txForm.id ? 'Editar transação' : 'Nova transação'}</h2>
+            <form className="grid gap-4" onSubmit={saveTransaction}>
+              <input className={fieldClass} placeholder="Descrição" value={txForm.description} onChange={(e) => setTxForm((p) => ({ ...p, description: e.target.value }))} required />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" type="number" step="0.01" placeholder="Valor" value={txForm.amount} onChange={(e) => setTxForm((p) => ({ ...p, amount: e.target.value }))} required />
-                <input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" type="date" value={txForm.effective_date} onChange={(e) => setTxForm((p) => ({ ...p, effective_date: e.target.value }))} required />
+                <input className={fieldClass} type="number" step="0.01" placeholder="Valor" value={txForm.amount} onChange={(e) => setTxForm((p) => ({ ...p, amount: e.target.value }))} required />
+                <input className={fieldClass} type="date" value={txForm.effective_date} onChange={(e) => setTxForm((p) => ({ ...p, effective_date: e.target.value }))} required />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <select className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" value={txForm.type} onChange={(e) => setTxForm((p) => ({ ...p, type: e.target.value }))}><option value="income">Receita</option><option value="expense">Despesa</option></select>
-                <select className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" value={txForm.category_id} onChange={(e) => setTxForm((p) => ({ ...p, category_id: e.target.value }))} required><option value="">Categoria</option>{categories.filter((c) => c.type === txForm.type).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
-                <select className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" value={txForm.account_id} onChange={(e) => setTxForm((p) => ({ ...p, account_id: e.target.value }))} required><option value="">Conta</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+                <select className={fieldClass} value={txForm.type} onChange={(e) => setTxForm((p) => ({ ...p, type: e.target.value }))}><option value="income">Receita</option><option value="expense">Despesa</option></select>
+                <select className={fieldClass} value={txForm.category_id} onChange={(e) => setTxForm((p) => ({ ...p, category_id: e.target.value }))} required><option value="">Categoria</option>{categories.filter((c) => c.type === txForm.type).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+                <select className={fieldClass} value={txForm.account_id} onChange={(e) => setTxForm((p) => ({ ...p, account_id: e.target.value }))} required><option value="">Conta</option>{accounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button type="button" className="bg-slate-100 text-slate-700" onClick={() => setIsTxModalOpen(false)}>Cancelar</button>
-                <button type="submit" className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white">Salvar transação</button>
+              <div className="flex justify-end gap-3 pt-3">
+                <button type="button" className="bg-slate-100 text-slate-700 rounded-xl px-5 py-2.5" onClick={() => setIsTxModalOpen(false)}>Cancelar</button>
+                <button type="submit" className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl px-5 py-2.5">Salvar transação</button>
               </div>
             </form>
           </div>
