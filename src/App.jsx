@@ -17,6 +17,7 @@ import { supabase } from './lib/supabase';
 
 const menuItems = [
   { id: 'book', label: 'Transações', icon: Receipt },
+  { id: 'search', label: 'Busca', icon: Search },
   { id: 'categories', label: 'Categorias', icon: Tags },
   { id: 'accounts', label: 'Contas', icon: Building2 },
   { id: 'profile', label: 'Perfil', icon: UserCircle2 }
@@ -588,17 +589,18 @@ export default function App() {
 
         {activeTab === 'profile' && <section className="bg-white rounded-2xl border border-slate-100 p-4 max-w-xl"><h2 className="text-lg font-bold mb-3">Meu perfil</h2><form className="grid gap-3" onSubmit={updateProfile}><input className={fieldClass} value={profile.username} onChange={(e) => setProfile((p) => ({ ...p, username: e.target.value }))} /><input className={fieldClass} type="password" value={profile.password} onChange={(e) => setProfile((p) => ({ ...p, password: e.target.value }))} /><button>Salvar</button></form>{isMaster && <button className="mt-3 w-full bg-slate-100 text-slate-700" onClick={() => setActiveTab('users')}>Gerenciar usuários</button>}</section>}
 
-        <button className="fixed bottom-5 right-5 w-14 h-14 rounded-full shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white grid place-items-center hover:scale-105 transition-all duration-300" onClick={openCreateTransaction}><Plus size={26} /></button>
+        <button className="hidden md:grid fixed bottom-24 right-5 w-14 h-14 rounded-full shadow-lg bg-sky-600 text-white place-items-center hover:scale-105 transition-all duration-300" onClick={() => setActiveTab('search')}><Search size={24} /></button>
+        <button className="hidden md:grid fixed bottom-5 right-5 w-14 h-14 rounded-full shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white place-items-center hover:scale-105 transition-all duration-300" onClick={openCreateTransaction}><Plus size={26} /></button>
       </section>
 
       <nav
-        className="fixed md:hidden bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 flex items-center justify-around px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-50"
+        className="fixed md:hidden bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 grid grid-cols-5 items-center px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-50"
       >
-        <button className={`flex flex-col items-center text-xs ${activeTab === 'book' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('book'); setProfileMenuOpen(false); setCadastrosMenuOpen(false); }}><Receipt size={18} /><span>Transações</span></button>
-        <button className={`flex flex-col items-center text-xs ${activeTab === 'search' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('search'); setProfileMenuOpen(false); setCadastrosMenuOpen(false); }}><Search size={18} /><span>Busca</span></button>
-        <button className="absolute left-1/2 -translate-x-1/2 -top-4 w-14 h-14 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 grid place-items-center" onClick={openCreateTransaction}><Plus size={24} /></button>
-        <div className="relative">
-          <button className={`flex flex-col items-center text-xs ${activeTab === 'categories' || activeTab === 'accounts' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setCadastrosMenuOpen((v) => !v); setProfileMenuOpen(false); }}><Building2 size={18} /><span>Cadastros</span></button>
+        <button className={`w-full flex flex-col items-center text-xs ${activeTab === 'book' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('book'); setProfileMenuOpen(false); setCadastrosMenuOpen(false); }}><Receipt size={18} /><span>Transações</span></button>
+        <button className={`w-full flex flex-col items-center text-xs ${activeTab === 'search' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('search'); setProfileMenuOpen(false); setCadastrosMenuOpen(false); }}><Search size={18} /><span>Busca</span></button>
+        <button className="mx-auto w-12 h-12 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 grid place-items-center" onClick={() => { openCreateTransaction(); setProfileMenuOpen(false); setCadastrosMenuOpen(false); }}><Plus size={22} /></button>
+        <div className="relative w-full flex justify-center">
+          <button className={`w-full flex flex-col items-center text-xs ${activeTab === 'categories' || activeTab === 'accounts' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setCadastrosMenuOpen((v) => !v); setProfileMenuOpen(false); }}><Building2 size={18} /><span>Cadastros</span></button>
           {cadastrosMenuOpen && (
             <div className="absolute bottom-14 right-0 w-40 rounded-xl border border-slate-200 bg-white shadow-xl p-2">
               <button className="w-full text-left px-2 py-2 rounded-lg hover:bg-slate-100 text-sm text-slate-700" onClick={() => { setActiveTab('categories'); setCadastrosMenuOpen(false); }}>Categorias</button>
@@ -606,8 +608,8 @@ export default function App() {
             </div>
           )}
         </div>
-        <div className="relative">
-          <button className={`flex flex-col items-center text-xs ${activeTab === 'profile' || activeTab === 'users' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setProfileMenuOpen((v) => !v); setCadastrosMenuOpen(false); }}><UserCircle2 size={18} /><span>Perfil</span></button>
+        <div className="relative w-full flex justify-center">
+          <button className={`w-full flex flex-col items-center text-xs ${activeTab === 'profile' || activeTab === 'users' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setProfileMenuOpen((v) => !v); setCadastrosMenuOpen(false); }}><UserCircle2 size={18} /><span>Perfil</span></button>
           {profileMenuOpen && (
             <div className="absolute bottom-14 right-0 w-44 rounded-xl border border-slate-200 bg-white shadow-xl p-2">
               <button className="w-full text-left px-2 py-2 rounded-lg hover:bg-slate-100 text-sm text-slate-700" onClick={() => { setActiveTab('profile'); setProfileMenuOpen(false); }}>Meu perfil</button>
