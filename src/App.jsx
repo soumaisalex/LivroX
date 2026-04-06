@@ -4,6 +4,7 @@ import {
   LogOut,
   Pencil,
   Plus,
+  Printer,
   Receipt,
   Search,
   Tags,
@@ -61,6 +62,7 @@ export default function App() {
   const [users, setUsers] = useState([]);
 
   const [search, setSearch] = useState('');
+  const [dayFilter, setDayFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [globalSearch, setGlobalSearch] = useState('');
@@ -89,6 +91,7 @@ export default function App() {
   const [categoryForm, setCategoryForm] = useState({ name: '', type: 'expense' });
   const [accountForm, setAccountForm] = useState({ name: '', kind: 'bank' });
   const [cadastrosMenuOpen, setCadastrosMenuOpen] = useState(false);
+  const [printMeta, setPrintMeta] = useState({ time: '', date: '' });
 
   useEffect(() => {
     bootstrap();
@@ -96,7 +99,7 @@ export default function App() {
 
   useEffect(() => {
     if (company?.id && setupDone && loggedIn) loadTransactions();
-  }, [company?.id, setupDone, loggedIn, selectedMonth, selectedYear, search, categoryFilter, typeFilter]);
+  }, [company?.id, setupDone, loggedIn, selectedMonth, selectedYear, dayFilter, search, categoryFilter, typeFilter]);
 
   async function bootstrap() {
     setLoading(true);
@@ -144,6 +147,7 @@ export default function App() {
       .order('effective_date', { ascending: false });
 
     if (search.trim()) query = query.ilike('description', `%${search.trim()}%`);
+    if (dayFilter) query = query.eq('effective_date', dayFilter);
     if (categoryFilter) query = query.eq('category_id', categoryFilter);
     if (typeFilter !== 'all') query = query.eq('type', typeFilter);
 
@@ -248,6 +252,15 @@ export default function App() {
   function openCreateTransaction() {
     setTxForm(emptyTransaction);
     setIsTxModalOpen(true);
+  }
+
+  function handlePrintMonthReport() {
+    const nowDate = new Date();
+    setPrintMeta({
+      time: nowDate.toLocaleTimeString('pt-BR'),
+      date: nowDate.toLocaleDateString('pt-BR'),
+    });
+    setTimeout(() => window.print(), 50);
   }
 
   function openEditTransaction(tx) {
@@ -373,6 +386,7 @@ export default function App() {
   const balance = totals.income - totals.expense;
   const isMaster = sessionUser.role === 'master';
   const fieldClass = 'rounded-xl bg-slate-100/80 border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400';
+  const monthRange = getMonthRange(selectedMonth, selectedYear);
   const activePageTitle =
     activeTab === 'users' ? 'Usuários' : activeTab === 'search' ? 'Busca geral' : menuItems.find((item) => item.id === activeTab)?.label || 'Transações';
 
@@ -387,18 +401,23 @@ export default function App() {
   if (!setupDone) {
     return (
       <main className="min-h-screen grid place-items-center p-4 bg-slate-50">
-        <section className="w-full max-w-3xl bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          <h1 className="text-2xl font-bold tracking-tight">Primeiro acesso • LivroX</h1>
-          <p className="text-slate-500 mt-1 mb-4">Cadastre a estrutura inicial da empresa.</p>
-          <form className="grid gap-3" onSubmit={runSetup}>
-            <label className="text-sm text-slate-600">Empresa<input className="mt-1 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" required value={setupForm.companyName} onChange={(e) => setSetupForm((p) => ({ ...p, companyName: e.target.value }))} /></label>
-            <label className="text-sm text-slate-600">Bancos / Carteiras<textarea className="mt-1 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" rows={3} value={setupForm.accountsText} onChange={(e) => setSetupForm((p) => ({ ...p, accountsText: e.target.value }))} /></label>
-            <label className="text-sm text-slate-600">Categorias de receita<textarea className="mt-1 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" rows={3} value={setupForm.incomeText} onChange={(e) => setSetupForm((p) => ({ ...p, incomeText: e.target.value }))} /></label>
-            <label className="text-sm text-slate-600">Categorias de despesa<textarea className="mt-1 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" rows={3} value={setupForm.expenseText} onChange={(e) => setSetupForm((p) => ({ ...p, expenseText: e.target.value }))} /></label>
-            <button className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white">Finalizar configuração</button>
-          </form>
-          {errorMessage && <p className="mt-3 text-sm text-rose-600">{errorMessage}</p>}
-        </section>
+        <div className="w-full max-w-3xl">
+          <section className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <h1 className="text-2xl font-bold tracking-tight">Primeiro acesso • LivroX</h1>
+            <p className="text-slate-500 mt-1 mb-4">Cadastre a estrutura inicial da empresa.</p>
+            <form className="grid gap-3" onSubmit={runSetup}>
+              <label className="text-sm text-slate-600">Empresa<input className="mt-1 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" required value={setupForm.companyName} onChange={(e) => setSetupForm((p) => ({ ...p, companyName: e.target.value }))} /></label>
+              <label className="text-sm text-slate-600">Bancos / Carteiras<textarea className="mt-1 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" rows={3} value={setupForm.accountsText} onChange={(e) => setSetupForm((p) => ({ ...p, accountsText: e.target.value }))} /></label>
+              <label className="text-sm text-slate-600">Categorias de receita<textarea className="mt-1 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" rows={3} value={setupForm.incomeText} onChange={(e) => setSetupForm((p) => ({ ...p, incomeText: e.target.value }))} /></label>
+              <label className="text-sm text-slate-600">Categorias de despesa<textarea className="mt-1 rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" rows={3} value={setupForm.expenseText} onChange={(e) => setSetupForm((p) => ({ ...p, expenseText: e.target.value }))} /></label>
+              <button className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white">Finalizar configuração</button>
+            </form>
+            {errorMessage && <p className="mt-3 text-sm text-rose-600">{errorMessage}</p>}
+          </section>
+          <footer className="text-center text-[11px] text-slate-400 mt-3">
+            Desenvolvido por <a href="https://instagram.com/soumaisalex" target="_blank" rel="noreferrer" className="hover:text-slate-600">Alex Passos</a>
+          </footer>
+        </div>
       </main>
     );
   }
@@ -406,15 +425,20 @@ export default function App() {
   if (!loggedIn) {
     return (
       <main className="min-h-screen grid place-items-center p-4 bg-slate-50">
-        <section className="w-full max-w-md bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          <h1 className="text-2xl font-bold tracking-tight">Entrar no LivroX</h1>
-          <form className="grid gap-3 mt-4" onSubmit={handleLogin}>
-            <input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" placeholder="Login" required value={loginForm.username} onChange={(e) => setLoginForm((p) => ({ ...p, username: e.target.value }))} />
-            <input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" placeholder="Senha" type="password" required value={loginForm.password} onChange={(e) => setLoginForm((p) => ({ ...p, password: e.target.value }))} />
-            <button className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white">Entrar</button>
-          </form>
-          {errorMessage && <p className="mt-3 text-sm text-rose-600">{errorMessage}</p>}
-        </section>
+        <div className="w-full max-w-md">
+          <section className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+            <h1 className="text-2xl font-bold tracking-tight">Entrar no LivroX</h1>
+            <form className="grid gap-3 mt-4" onSubmit={handleLogin}>
+              <input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" placeholder="Login" required value={loginForm.username} onChange={(e) => setLoginForm((p) => ({ ...p, username: e.target.value }))} />
+              <input className="rounded-xl focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400" placeholder="Senha" type="password" required value={loginForm.password} onChange={(e) => setLoginForm((p) => ({ ...p, password: e.target.value }))} />
+              <button className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white">Entrar</button>
+            </form>
+            {errorMessage && <p className="mt-3 text-sm text-rose-600">{errorMessage}</p>}
+          </section>
+          <footer className="text-center text-[11px] text-slate-400 mt-3">
+            Desenvolvido por <a href="https://instagram.com/soumaisalex" target="_blank" rel="noreferrer" className="hover:text-slate-600">Alex Passos</a>
+          </footer>
+        </div>
       </main>
     );
   }
@@ -451,14 +475,16 @@ export default function App() {
         <header className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 flex flex-col items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight text-center">{activePageTitle}</h1>
 
-          <div className="flex items-center gap-2 bg-slate-50 rounded-xl border border-slate-200 px-2 py-1">
-            <button className="bg-transparent text-slate-600 hover:text-slate-900" onClick={() => setSelectedMonth((m) => (m === 0 ? 11 : m - 1))}>‹</button>
-            <span className="font-semibold text-slate-700">{months[selectedMonth]} {selectedYear}</span>
-            <button className="bg-transparent text-slate-600 hover:text-slate-900" onClick={() => setSelectedMonth((m) => (m === 11 ? 0 : m + 1))}>›</button>
-            <select className="rounded-lg border border-slate-200 bg-white text-sm" value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}>
-              {[selectedYear - 2, selectedYear - 1, selectedYear, selectedYear + 1].map((year) => <option key={year} value={year}>{year}</option>)}
-            </select>
-          </div>
+          {activeTab === 'book' && (
+            <div className="flex items-center gap-2 bg-slate-50 rounded-xl border border-slate-200 px-2 py-1">
+              <button className="bg-transparent text-slate-600 hover:text-slate-900" onClick={() => setSelectedMonth((m) => (m === 0 ? 11 : m - 1))}>‹</button>
+              <span className="font-semibold text-slate-700">{months[selectedMonth]} {selectedYear}</span>
+              <button className="bg-transparent text-slate-600 hover:text-slate-900" onClick={() => setSelectedMonth((m) => (m === 11 ? 0 : m + 1))}>›</button>
+              <select className="rounded-lg border border-slate-200 bg-white text-sm" value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}>
+                {[selectedYear - 2, selectedYear - 1, selectedYear, selectedYear + 1].map((year) => <option key={year} value={year}>{year}</option>)}
+              </select>
+            </div>
+          )}
         </header>
 
         {errorMessage && <p className="text-sm text-rose-600 bg-rose-50 border border-rose-100 rounded-xl p-3">{errorMessage}</p>}
@@ -473,7 +499,15 @@ export default function App() {
             </section>
 
             <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              <div className="hidden md:flex justify-end mb-3">
+                <button className="inline-flex items-center gap-2 rounded-xl bg-rose-600 text-white px-4 py-2" onClick={handlePrintMonthReport}>
+                  <Printer size={16} />
+                  Imprimir mês
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                <input className={fieldClass} type="date" min={monthRange.from} max={monthRange.to} value={dayFilter} onChange={(e) => setDayFilter(e.target.value)} />
                 <input className={fieldClass} placeholder="Buscar descrição" value={search} onChange={(e) => setSearch(e.target.value)} />
                 <select className={fieldClass} value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
                   <option value="">Todas categorias</option>
@@ -525,6 +559,9 @@ export default function App() {
                 </table>
               </div>
             </section>
+            <p className="hidden print:block text-[8px] text-slate-700 mt-3">
+              Relatório impresso às {printMeta.time || '--:--:--'} do dia {printMeta.date || '--/--/----'} por {sessionUser.username || 'usuário'}. LivroX desenvolvido por Alex Passos.
+            </p>
           </>
         )}
 
@@ -589,12 +626,16 @@ export default function App() {
 
         {activeTab === 'profile' && <section className="bg-white rounded-2xl border border-slate-100 p-4 max-w-xl"><h2 className="text-lg font-bold mb-3">Meu perfil</h2><form className="grid gap-3" onSubmit={updateProfile}><input className={fieldClass} value={profile.username} onChange={(e) => setProfile((p) => ({ ...p, username: e.target.value }))} /><input className={fieldClass} type="password" value={profile.password} onChange={(e) => setProfile((p) => ({ ...p, password: e.target.value }))} /><button>Salvar</button></form>{isMaster && <button className="mt-3 w-full bg-slate-100 text-slate-700" onClick={() => setActiveTab('users')}>Gerenciar usuários</button>}</section>}
 
-        <button className="hidden md:grid fixed bottom-24 right-5 w-14 h-14 rounded-full shadow-lg bg-sky-600 text-white place-items-center hover:scale-105 transition-all duration-300" onClick={() => setActiveTab('search')}><Search size={24} /></button>
-        <button className="hidden md:grid fixed bottom-5 right-5 w-14 h-14 rounded-full shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white place-items-center hover:scale-105 transition-all duration-300" onClick={openCreateTransaction}><Plus size={26} /></button>
+        <footer className="text-center text-[11px] text-slate-400 pt-2">
+          Desenvolvido por <a href="https://instagram.com/soumaisalex" target="_blank" rel="noreferrer" className="hover:text-slate-600">Alex Passos</a>
+        </footer>
+
+        <button className="hidden md:grid fixed bottom-24 right-5 w-14 h-14 rounded-full shadow-lg bg-sky-600 text-white place-items-center hover:scale-105 transition-all duration-300 no-print" onClick={() => setActiveTab('search')}><Search size={24} /></button>
+        <button className="hidden md:grid fixed bottom-5 right-5 w-14 h-14 rounded-full shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white place-items-center hover:scale-105 transition-all duration-300 no-print" onClick={openCreateTransaction}><Plus size={26} /></button>
       </section>
 
       <nav
-        className="fixed md:hidden bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 grid grid-cols-5 items-center px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-50"
+        className="fixed md:hidden bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 grid grid-cols-5 items-center px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-50 no-print"
       >
         <button className={`w-full flex flex-col items-center text-xs ${activeTab === 'book' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('book'); setProfileMenuOpen(false); setCadastrosMenuOpen(false); }}><Receipt size={18} /><span>Transações</span></button>
         <button className={`w-full flex flex-col items-center text-xs ${activeTab === 'search' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('search'); setProfileMenuOpen(false); setCadastrosMenuOpen(false); }}><Search size={18} /><span>Busca</span></button>
