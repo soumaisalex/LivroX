@@ -387,6 +387,7 @@ export default function App() {
   const isMaster = sessionUser.role === 'master';
   const fieldClass = 'rounded-xl bg-slate-100/80 border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400';
   const monthRange = getMonthRange(selectedMonth, selectedYear);
+  const printTitleMonth = `${months[selectedMonth]} ${selectedYear}`;
   const activePageTitle =
     activeTab === 'users' ? 'Usuários' : activeTab === 'search' ? 'Busca geral' : menuItems.find((item) => item.id === activeTab)?.label || 'Transações';
 
@@ -499,13 +500,6 @@ export default function App() {
             </section>
 
             <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
-              <div className="hidden md:flex justify-end mb-3">
-                <button className="inline-flex items-center gap-2 rounded-xl bg-rose-600 text-white px-4 py-2" onClick={handlePrintMonthReport}>
-                  <Printer size={16} />
-                  Imprimir mês
-                </button>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
                 <input className={fieldClass} type="date" min={monthRange.from} max={monthRange.to} value={dayFilter} onChange={(e) => setDayFilter(e.target.value)} />
                 <input className={fieldClass} placeholder="Buscar descrição" value={search} onChange={(e) => setSearch(e.target.value)} />
@@ -559,9 +553,6 @@ export default function App() {
                 </table>
               </div>
             </section>
-            <p className="hidden print:block text-[8px] text-slate-700 mt-3">
-              Relatório impresso às {printMeta.time || '--:--:--'} do dia {printMeta.date || '--/--/----'} por {sessionUser.username || 'usuário'}. LivroX desenvolvido por Alex Passos.
-            </p>
           </>
         )}
 
@@ -630,6 +621,11 @@ export default function App() {
           Desenvolvido por <a href="https://instagram.com/soumaisalex" target="_blank" rel="noreferrer" className="hover:text-slate-600">Alex Passos</a>
         </footer>
 
+        {activeTab === 'book' && (
+          <button className="hidden md:grid fixed bottom-44 right-5 w-14 h-14 rounded-full shadow-lg bg-rose-600 text-white place-items-center hover:scale-105 transition-all duration-300 no-print" onClick={handlePrintMonthReport}>
+            <Printer size={22} />
+          </button>
+        )}
         <button className="hidden md:grid fixed bottom-24 right-5 w-14 h-14 rounded-full shadow-lg bg-sky-600 text-white place-items-center hover:scale-105 transition-all duration-300 no-print" onClick={() => setActiveTab('search')}><Search size={24} /></button>
         <button className="hidden md:grid fixed bottom-5 right-5 w-14 h-14 rounded-full shadow-lg bg-gradient-to-r from-emerald-500 to-teal-500 text-white place-items-center hover:scale-105 transition-all duration-300 no-print" onClick={openCreateTransaction}><Plus size={26} /></button>
       </section>
@@ -684,6 +680,61 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <section className="print-report-root hidden print:block">
+        <header className="print-report-header">
+          <h1>LivroX • Relatório Mensal</h1>
+          <p>Mês de referência: {printTitleMonth}</p>
+        </header>
+
+        <section className="print-summary-grid">
+          <article>
+            <h2>Saldo Atual</h2>
+            <p>R$ {balance.toFixed(2)}</p>
+          </article>
+          <article>
+            <h2>Receitas</h2>
+            <p>R$ {totals.income.toFixed(2)}</p>
+          </article>
+          <article>
+            <h2>Despesas</h2>
+            <p>R$ {totals.expense.toFixed(2)}</p>
+          </article>
+          <article>
+            <h2>Balanço Mensal</h2>
+            <p>R$ {balance.toFixed(2)}</p>
+          </article>
+        </section>
+
+        <table className="print-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Descrição</th>
+              <th>Categoria</th>
+              <th>Conta</th>
+              <th>Tipo</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transactions.map((tx) => (
+              <tr key={`print-${tx.id}`}>
+                <td>{new Date(tx.effective_date).toLocaleDateString('pt-BR')}</td>
+                <td>{tx.description}</td>
+                <td>{categories.find((c) => c.id === tx.category_id)?.name || '-'}</td>
+                <td>{accounts.find((a) => a.id === tx.account_id)?.name || '-'}</td>
+                <td>{tx.type === 'income' ? 'Receita' : 'Despesa'}</td>
+                <td>R$ {Number(tx.amount).toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <footer className="print-report-footer">
+          Relatório impresso às {printMeta.time || '--:--:--'} do dia {printMeta.date || '--/--/----'} por {sessionUser.username || 'usuário'}. LivroX desenvolvido por Alex Passos.
+        </footer>
+      </section>
     </main>
   );
 }
