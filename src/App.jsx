@@ -5,6 +5,7 @@ import {
   Pencil,
   Plus,
   Receipt,
+  Search,
   Tags,
   Trash2,
   TrendingDown,
@@ -61,6 +62,13 @@ export default function App() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [globalDateStart, setGlobalDateStart] = useState('');
+  const [globalDateEnd, setGlobalDateEnd] = useState('');
+  const [globalTypeFilter, setGlobalTypeFilter] = useState('all');
+  const [globalCategoryFilter, setGlobalCategoryFilter] = useState('');
+  const [globalResults, setGlobalResults] = useState([]);
+  const [globalLoading, setGlobalLoading] = useState(false);
 
   const [txForm, setTxForm] = useState(emptyTransaction);
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
@@ -79,6 +87,7 @@ export default function App() {
   const [loginForm, setLoginForm] = useState({ username: '', password: '' });
   const [categoryForm, setCategoryForm] = useState({ name: '', type: 'expense' });
   const [accountForm, setAccountForm] = useState({ name: '', kind: 'bank' });
+  const [cadastrosMenuOpen, setCadastrosMenuOpen] = useState(false);
 
   useEffect(() => {
     bootstrap();
@@ -140,6 +149,35 @@ export default function App() {
     const { data, error } = await query;
     if (error) return setErrorMessage(`Erro ao carregar transações: ${error.message}`);
     setTransactions(data ?? []);
+  }
+
+  async function runGlobalSearch(e) {
+    if (e) e.preventDefault();
+    setGlobalLoading(true);
+    setErrorMessage('');
+
+    try {
+      let query = supabase
+        .from('transactions')
+        .select('*')
+        .eq('company_id', company.id)
+        .eq('deleted', false)
+        .order('effective_date', { ascending: false });
+
+      if (globalSearch.trim()) query = query.ilike('description', `%${globalSearch.trim()}%`);
+      if (globalDateStart) query = query.gte('effective_date', globalDateStart);
+      if (globalDateEnd) query = query.lte('effective_date', globalDateEnd);
+      if (globalTypeFilter !== 'all') query = query.eq('type', globalTypeFilter);
+      if (globalCategoryFilter) query = query.eq('category_id', globalCategoryFilter);
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setGlobalResults(data ?? []);
+    } catch (error) {
+      setErrorMessage(`Erro na busca global: ${error?.message || 'erro desconhecido'}`);
+    } finally {
+      setGlobalLoading(false);
+    }
   }
 
   async function runSetup(e) {
@@ -334,7 +372,8 @@ export default function App() {
   const balance = totals.income - totals.expense;
   const isMaster = sessionUser.role === 'master';
   const fieldClass = 'rounded-xl bg-slate-100/80 border-slate-200 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400';
-  const activePageTitle = activeTab === 'users' ? 'Usuários' : menuItems.find((item) => item.id === activeTab)?.label || 'Transações';
+  const activePageTitle =
+    activeTab === 'users' ? 'Usuários' : activeTab === 'search' ? 'Busca geral' : menuItems.find((item) => item.id === activeTab)?.label || 'Transações';
 
   useEffect(() => {
     if (!isMaster && activeTab === 'users') setActiveTab('book');
@@ -488,6 +527,59 @@ export default function App() {
           </>
         )}
 
+        {activeTab === 'search' && (
+          <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 space-y-4">
+            <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" onSubmit={runGlobalSearch}>
+              <input className={fieldClass} placeholder="Pesquisar descrição em todo o banco" value={globalSearch} onChange={(e) => setGlobalSearch(e.target.value)} />
+              <input className={fieldClass} type="date" value={globalDateStart} onChange={(e) => setGlobalDateStart(e.target.value)} />
+              <input className={fieldClass} type="date" value={globalDateEnd} onChange={(e) => setGlobalDateEnd(e.target.value)} />
+              <select className={fieldClass} value={globalTypeFilter} onChange={(e) => setGlobalTypeFilter(e.target.value)}>
+                <option value="all">Receitas e despesas</option>
+                <option value="income">Apenas receitas</option>
+                <option value="expense">Apenas despesas</option>
+              </select>
+              <select className={fieldClass} value={globalCategoryFilter} onChange={(e) => setGlobalCategoryFilter(e.target.value)}>
+                <option value="">Todas categorias</option>
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <button className="bg-sky-600 text-white">Buscar</button>
+            </form>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs uppercase tracking-wider text-slate-500 border-b border-slate-100">
+                    <th className="py-3 text-left">Data</th>
+                    <th className="py-3 text-left">Descrição</th>
+                    <th className="py-3 text-left">Categoria</th>
+                    <th className="py-3 text-left hidden md:table-cell">Conta</th>
+                    <th className="py-3 text-left">Valor</th>
+                    <th className="py-3 text-left">Tipo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {globalLoading && (
+                    <tr><td className="py-4 text-slate-500" colSpan={6}>Carregando...</td></tr>
+                  )}
+                  {!globalLoading && globalResults.map((tx) => (
+                    <tr key={tx.id} className="border-b border-slate-100 hover:bg-slate-50 transition-all duration-300">
+                      <td className="py-3">{new Date(tx.effective_date).toLocaleDateString('pt-BR')}</td>
+                      <td className="py-3 font-medium text-slate-700">{tx.description}</td>
+                      <td className="py-3"><span className={`px-2 py-1 rounded-full text-xs font-medium ${tx.type === 'income' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600'}`}>{categories.find((c) => c.id === tx.category_id)?.name || '-'}</span></td>
+                      <td className="py-3 hidden md:table-cell text-slate-500">{accounts.find((a) => a.id === tx.account_id)?.name || '-'}</td>
+                      <td className={`py-3 font-medium ${tx.type === 'income' ? 'text-emerald-600' : 'text-rose-500'}`}>R$ {Number(tx.amount).toFixed(2)}</td>
+                      <td className="py-3">{tx.type === 'income' ? 'Receita' : 'Despesa'}</td>
+                    </tr>
+                  ))}
+                  {!globalLoading && globalResults.length === 0 && (
+                    <tr><td className="py-4 text-slate-500" colSpan={6}>Nenhum resultado encontrado.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
         {activeTab === 'categories' && <section className="grid grid-cols-1 lg:grid-cols-2 gap-4"><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Nova categoria</h2><form className="grid gap-3" onSubmit={createCategory}><input className={fieldClass} placeholder="Nome" required value={categoryForm.name} onChange={(e) => setCategoryForm((p) => ({ ...p, name: e.target.value }))} /><select className={fieldClass} value={categoryForm.type} onChange={(e) => setCategoryForm((p) => ({ ...p, type: e.target.value }))}><option value="expense">Despesa</option><option value="income">Receita</option></select><button>Adicionar</button></form></article><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Categorias</h2><ul className="space-y-2">{categories.map((cat) => <li key={cat.id} className="flex items-center justify-between border border-slate-100 rounded-xl px-3 py-2"><span>{cat.name}</span><button className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-300" onClick={() => deleteCategory(cat.id)}><Trash2 size={14} /></button></li>)}</ul></article></section>}
 
         {activeTab === 'accounts' && <section className="grid grid-cols-1 lg:grid-cols-2 gap-4"><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Nova conta</h2><form className="grid gap-3" onSubmit={createAccount}><input className={fieldClass} placeholder="Nome" required value={accountForm.name} onChange={(e) => setAccountForm((p) => ({ ...p, name: e.target.value }))} /><select className={fieldClass} value={accountForm.kind} onChange={(e) => setAccountForm((p) => ({ ...p, kind: e.target.value }))}><option value="bank">Banco</option><option value="wallet">Carteira</option><option value="cash">Dinheiro</option></select><button>Adicionar</button></form></article><article className="bg-white rounded-2xl border border-slate-100 p-4"><h2 className="font-bold text-lg mb-3">Contas</h2><ul className="space-y-2">{accounts.map((acc) => <li key={acc.id} className="flex items-center justify-between border border-slate-100 rounded-xl px-3 py-2"><span>{acc.name}</span><button className="p-2 rounded-full bg-slate-100 text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-all duration-300" onClick={() => deleteAccount(acc.id)}><Trash2 size={14} /></button></li>)}</ul></article></section>}
@@ -502,12 +594,20 @@ export default function App() {
       <nav
         className="fixed md:hidden bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 flex items-center justify-around px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] z-50"
       >
-        <button className={`flex flex-col items-center text-xs ${activeTab === 'book' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('book'); setProfileMenuOpen(false); }}><Receipt size={18} /><span>Transações</span></button>
-        <button className={`flex flex-col items-center text-xs ${activeTab === 'categories' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('categories'); setProfileMenuOpen(false); }}><Tags size={18} /><span>Categorias</span></button>
-        <button className="relative -top-4 w-14 h-14 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 grid place-items-center" onClick={openCreateTransaction}><Plus size={24} /></button>
-        <button className={`flex flex-col items-center text-xs ${activeTab === 'accounts' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('accounts'); setProfileMenuOpen(false); }}><Building2 size={18} /><span>Contas</span></button>
+        <button className={`flex flex-col items-center text-xs ${activeTab === 'book' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('book'); setProfileMenuOpen(false); setCadastrosMenuOpen(false); }}><Receipt size={18} /><span>Transações</span></button>
+        <button className={`flex flex-col items-center text-xs ${activeTab === 'search' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setActiveTab('search'); setProfileMenuOpen(false); setCadastrosMenuOpen(false); }}><Search size={18} /><span>Busca</span></button>
+        <button className="absolute left-1/2 -translate-x-1/2 -top-4 w-14 h-14 rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 grid place-items-center" onClick={openCreateTransaction}><Plus size={24} /></button>
         <div className="relative">
-          <button className={`flex flex-col items-center text-xs ${activeTab === 'profile' || activeTab === 'users' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => setProfileMenuOpen((v) => !v)}><UserCircle2 size={18} /><span>Perfil</span></button>
+          <button className={`flex flex-col items-center text-xs ${activeTab === 'categories' || activeTab === 'accounts' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setCadastrosMenuOpen((v) => !v); setProfileMenuOpen(false); }}><Building2 size={18} /><span>Cadastros</span></button>
+          {cadastrosMenuOpen && (
+            <div className="absolute bottom-14 right-0 w-40 rounded-xl border border-slate-200 bg-white shadow-xl p-2">
+              <button className="w-full text-left px-2 py-2 rounded-lg hover:bg-slate-100 text-sm text-slate-700" onClick={() => { setActiveTab('categories'); setCadastrosMenuOpen(false); }}>Categorias</button>
+              <button className="w-full text-left px-2 py-2 rounded-lg hover:bg-slate-100 text-sm text-slate-700" onClick={() => { setActiveTab('accounts'); setCadastrosMenuOpen(false); }}>Contas</button>
+            </div>
+          )}
+        </div>
+        <div className="relative">
+          <button className={`flex flex-col items-center text-xs ${activeTab === 'profile' || activeTab === 'users' ? 'text-emerald-600' : 'text-slate-500'}`} onClick={() => { setProfileMenuOpen((v) => !v); setCadastrosMenuOpen(false); }}><UserCircle2 size={18} /><span>Perfil</span></button>
           {profileMenuOpen && (
             <div className="absolute bottom-14 right-0 w-44 rounded-xl border border-slate-200 bg-white shadow-xl p-2">
               <button className="w-full text-left px-2 py-2 rounded-lg hover:bg-slate-100 text-sm text-slate-700" onClick={() => { setActiveTab('profile'); setProfileMenuOpen(false); }}>Meu perfil</button>
